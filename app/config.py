@@ -19,5 +19,7 @@ f89eae96ca13c79188b82dbb64deb940696568e97d30b5745c9f4a9292f778bec08316\
 3ffbcee59f0e7074a1364a564811fd9baf8d6f13dd0cdaf8f457afa37ca0fd3db7eef7\
 eb9f03de08c3cff2445f9941fd6eb76a9b8d9ab755bd7aae14848556c641c09ff2ee77"
 
-# defines the ful path for the DATABASE
+# defines the full path for the DATABASE
 DATABASE_PATH = os.path.join(basedir, DATABASE)
+
+SQLALCHEMY_DATABASE_URI = 'sqlite:///'+ DATABASE_PATH

@@ -1,26 +1,26 @@
 #views.py
 #
 
+###################
+##### imports #####
+###################
 
 from flask import Flask, flash, redirect, render_template,\
-                request, session, url_for, g
+                request, session, url_for
 from functools import wraps
-from forms import AddTaskForm
+from forms import AddTaskForm, RegisterForm, LoginForm
 from flask.ext.sqlalchemy import SQLAlchemy
 
-#COMMENTED OUT: old using SQLite3
-#import sqlite3
+
+##################
+##### config #####
+##################
 
 app = Flask(__name__)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 
-from models import Task
-
-
-#COMMENTED OUT: old using SQLite3
-#def connect_db():
-#   return sqlite3.connect(app.config['DATABASE'])
+from models import Task, User
 
 
 def login_required(test):
@@ -34,6 +34,10 @@ def login_required(test):
     return wrap
 
 
+##################
+### decorators ###
+##################
+
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
@@ -41,20 +45,53 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route('/register/', methods=['GET', 'POST'])
+def register():
+    error = None
+    form = RegisterForm(request.form)
+    if request.method == 'POST':
+        print form.errors
+        if form.validate_on_submit():
+            new_user = User(
+                form.name.data, 
+                form.email.data,
+                form.password.data
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            flash('New user added! Woohoo!')
+            return redirect(url_for('login'))
+        else:
+            flash("validation fail")
+            print form.errors
+            return render_template('register.html', form=form, error=error)
+    if request.method == 'GET':
+        return render_template('register.html', form=form)
+
+
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     error = None
+    form = LoginForm(request.form)
     if request.method == 'POST':
-        if request.form['username'] != app.config['USERNAME'] \
-        or request.form['password'] != app.config['PASSWORD']:
-            error = "Invalid Credentials. Try agin, bud."
-            return render_template("login.html", error= error)
-
+        if form.validate_on_submit():
+            u = User.query.filter_by(
+                name=request.form['name'],
+                password=request.form['password']
+                ).first()
+            if u == None:
+                error = ("Invalid username or password.")
+            else:
+                session['logged_in'] = True
+                flash('You in mate. Knock yaself out')
+                return redirect(url_for('tasks'))
         else:
-            session['logged_in'] = True
-            return redirect(url_for('tasks'))
+            print form.errors
+            return render_template('login.html', form=form, error=error)        
+
     if request.method == 'GET':
-        return render_template("login.html")
+        return render_template("login.html", form=form, error=error)
 
 
 @app.route('/tasks/')
